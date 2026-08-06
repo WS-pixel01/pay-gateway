@@ -1,9 +1,13 @@
 server:
   port: 8080
+  # Finish in-flight requests (e.g. an incoming webhook) before the JVM exits
+  shutdown: graceful
 
 spring:
   application:
     name: pay-gateway
+  lifecycle:
+    timeout-per-shutdown-phase: 20s
   datasource:
     driver-class-name: org.h2.Driver
     url: jdbc:h2:mem:paydb;MODE=MySQL;DB_CLOSE_DELAY=-1
@@ -22,6 +26,17 @@ spring:
     date-format: yyyy-MM-dd HH:mm:ss
     time-zone: GMT+8
     default-property-inclusion: non_null
+
+# Health endpoints only: /actuator/health plus liveness/readiness probes for Docker and k8s
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
 
 mybatis-plus:
   configuration:

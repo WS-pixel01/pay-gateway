@@ -1,0 +1,20 @@
+services:
+  pay-gateway:
+    build: .
+    image: pay-gateway:latest
+    container_name: pay-gateway
+    ports:
+      - "8080:8080"
+    volumes:
+      # keep reconciliation bill archives across container restarts
+      - bills-data:/app/data
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/actuator/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 30s
+    restart: unless-stopped
+
+volumes:
+  bills-data:

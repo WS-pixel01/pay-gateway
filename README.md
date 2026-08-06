@@ -1,5 +1,7 @@
 # Unified Payment Gateway (pay-gateway)
 
+[![CI](https://github.com/WS-pixel01/pay-gateway/actions/workflows/ci.yml/badge.svg)](https://github.com/WS-pixel01/pay-gateway/actions/workflows/ci.yml)
+
 A payment gateway covering multi-channel checkout, refunds, inbound webhook processing and daily
 reconciliation, built around idempotency keys, the transactional outbox pattern and exactly-once
 processing. **No middleware needed locally**: in-memory H2, a simulated third-party channel and a
@@ -8,6 +10,19 @@ simulated MQ, so the whole money flow runs as soon as you start it.
 ---
 
 ## 1. Quick start
+
+### Run with Docker (no JDK or Maven needed)
+
+```bash
+docker compose up --build
+```
+
+The image is a multi-stage build: a Maven stage compiles the project, then a JRE-21 runtime stage
+runs the exploded Spring Boot layered jar as a non-root user. The compose file wires a healthcheck
+against `/actuator/health`, and CI boots the container on every push to prove the image actually
+starts.
+
+### Run from source
 
 Prerequisites: JDK 21+, Maven 3.8+.
 

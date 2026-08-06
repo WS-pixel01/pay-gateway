@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches: [master, main, docker]
+  pull_request:
+
+jobs:
+  build:
+    name: Build and test (mvn verify)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: Build and run tests
+        run: mvn -B -ntp verify
+
+  docker:
+    name: Docker image build and smoke test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build image
+        run: docker build -t pay-gateway:ci .
+      - name: Boot the container and wait for /actuator/health
+        run: |
+          docker run -d --name gw -p 8080:8080 pay-gateway:ci
+          for i in $(seq 1 30); do
+            if curl -fsS http://localhost:8080/actuator/health > /dev/null 2>&1; then
+              echo "container is healthy"
+              curl -s http://localhost:8080/actuator/health
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "container never became healthy"
+          docker logs gw
+          exit 1
