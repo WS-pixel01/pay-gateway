@@ -4,6 +4,8 @@ on:
   push:
     branches: [master, main, docker]
   pull_request:
+  # Manual trigger from the Actions tab
+  workflow_dispatch:
 
 jobs:
   build:
