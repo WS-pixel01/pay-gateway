@@ -1,0 +1,142 @@
+### Unified Payment Gateway - demo script (runnable with the REST Client in IntelliJ / VS Code)
+@host = http://localhost:8080
+
+### 0. Obtain a token (only needed when pay.auth.enabled=true)
+POST {{host}}/api/auth/token?bizSystem=mall&appId=mall-app
+
+### 1. Balance payment: debited synchronously, succeeds immediately
+POST {{host}}/api/pay/create
+Content-Type: application/json
+
+{
+  "bizSystem": "mall",
+  "bizOrderNo": "MALL-BALANCE-001",
+  "userId": "U10001",
+  "amount": 99.90,
+  "subject": "iPhone case",
+  "channelType": "BALANCE"
+}
+
+### 2. Duplicate checkout: same payNo returned, balance is not debited twice (idempotent)
+POST {{host}}/api/pay/create
+Content-Type: application/json
+
+{
+  "bizSystem": "mall",
+  "bizOrderNo": "MALL-BALANCE-001",
+  "userId": "U10001",
+  "amount": 99.90,
+  "subject": "iPhone case",
+  "channelType": "BALANCE"
+}
+
+### 3. Check the balance (starts at 10000.00)
+GET {{host}}/api/ops/account/U10001/balance
+
+### 4. Alipay payment: an RSA2-signed async webhook arrives ~3s later, then is pushed again on purpose
+POST {{host}}/api/pay/create
+Content-Type: application/json
+
+{
+  "bizSystem": "mall",
+  "bizOrderNo": "MALL-ALIPAY-001",
+  "userId": "U10001",
+  "amount": 188.00,
+  "subject": "Bluetooth earphones",
+  "channelType": "ALIPAY"
+}
+
+### 5. WeChat payment: the webhook's business fields are AES-GCM encrypted
+POST {{host}}/api/pay/create
+Content-Type: application/json
+
+{
+  "bizSystem": "mall",
+  "bizOrderNo": "MALL-WECHAT-001",
+  "userId": "U10002",
+  "amount": 66.00,
+  "subject": "Mechanical keyboard",
+  "channelType": "WECHAT"
+}
+
+### 6. Automatic routing: no channelType, and 60,000 exceeds WeChat's cap, so it lands on Alipay
+POST {{host}}/api/pay/create
+Content-Type: application/json
+
+{
+  "bizSystem": "mall",
+  "bizOrderNo": "MALL-AUTO-001",
+  "userId": "U10001",
+  "amount": 60000.00,
+  "subject": "Large order - automatic routing",
+  "region": "CN"
+}
+
+### 7. Auto-closed after one minute (demonstrates expiry closing + the stock-release event)
+### Note: the simulated channel pays within ~3s by default, so start with a long webhook delay first:
+###   mvn spring-boot:run -Dspring-boot.run.arguments=--pay.mock.webhook-delay-seconds=600
+POST {{host}}/api/pay/create
+Content-Type: application/json
+
+{
+  "bizSystem": "mall",
+  "bizOrderNo": "MALL-EXPIRE-001",
+  "userId": "U10001",
+  "amount": 1.00,
+  "subject": "Expiry-closing demo",
+  "channelType": "ALIPAY",
+  "expireMinutes": 1
+}
+
+### 8. Look up a pay order by business order number
+GET {{host}}/api/pay/biz?bizSystem=mall&bizOrderNo=MALL-ALIPAY-001
+
+### 9. List recent pay orders
+GET {{host}}/api/pay/list?limit=20
+
+### 10. Webhook log: shows the duplicate webhook marked DUPLICATE
+GET {{host}}/api/ops/webhooks?limit=50
+
+### 11. Notifications the upstream business system received
+GET {{host}}/api/ops/notifications
+
+### 12. Outbox rows (replace bizKey with a real payNo)
+GET {{host}}/api/ops/messages?bizKey=REPLACE_WITH_PAY_NO
+
+### 13. Re-push a channel webhook by hand to verify gateway idempotency
+POST {{host}}/api/ops/mock/resend-webhook?payNo=REPLACE_WITH_PAY_NO&channelType=ALIPAY
+
+### 14. Partial refund
+POST {{host}}/api/refund/apply
+Content-Type: application/json
+
+{
+  "payNo": "REPLACE_WITH_PAY_NO",
+  "bizRefundNo": "MALL-REFUND-001",
+  "amount": 50.00,
+  "reason": "user cancelled part of the order"
+}
+
+### 15. List every refund order for a pay order
+GET {{host}}/api/refund/pay/REPLACE_WITH_PAY_NO
+
+### 16. List channels (secrets masked)
+GET {{host}}/api/ops/channels
+
+### 17. Disable Alipay to demonstrate channel failover
+POST {{host}}/api/ops/channels/ALIPAY/switch?enabled=false
+
+### 18. Re-enable Alipay
+POST {{host}}/api/ops/channels/ALIPAY/switch?enabled=true
+
+### 19. Trigger today's reconciliation (injects missing/extra/mismatched entries)
+POST {{host}}/api/ops/reconcile/run
+
+### 20. View the discrepancy records
+GET {{host}}/api/ops/reconcile/diffs
+
+### 21. Mark a discrepancy as handled
+POST {{host}}/api/ops/reconcile/diffs/1/handle?remark=raised with the channel and backfilled
+
+### 22. Compensating channel query (corrects the local order when a webhook was lost)
+POST {{host}}/api/pay/REPLACE_WITH_PAY_NO/sync

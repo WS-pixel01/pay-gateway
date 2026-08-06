@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.wendy</groupId>
+        <artifactId>pay-gateway</artifactId>
+        <version>1.0.0</version>
+    </parent>
+
+    <artifactId>pay-bootstrap</artifactId>
+    <name>pay-bootstrap</name>
+    <description>Bootstrap assembly: application entry point, web configuration, ops endpoints,
+        configuration files and DDL scripts</description>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.wendy</groupId>
+            <artifactId>pay-trade</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.wendy</groupId>
+            <artifactId>pay-reconcile</artifactId>
+        </dependency>
+        <!-- trade and reconcile already pull in common/channel/account/message transitively;
+             declaring them explicitly makes "the bootstrap module aggregates every business
+             domain" visible in the pom -->
+        <dependency>
+            <groupId>com.wendy</groupId>
+            <artifactId>pay-account</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.wendy</groupId>
+            <artifactId>pay-message</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <finalName>pay-gateway</finalName>
+        <plugins>
+            <!--
+              Only the bootstrap module declares this plugin, so only it produces an executable jar
+              while the other modules stay plain dependency jars.
+              The repackage execution comes from spring-boot-starter-parent's pluginManagement —
+              do not add <executions> here, or the jar gets packaged twice.
+            -->
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <!-- Force UTF-8 so console output is consistent regardless of the platform default -->
+                    <jvmArguments>-Dfile.encoding=UTF-8</jvmArguments>
+                    <excludes>
+                        <exclude>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                        </exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>

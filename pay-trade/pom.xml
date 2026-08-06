@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.wendy</groupId>
+        <artifactId>pay-gateway</artifactId>
+        <version>1.0.0</version>
+    </parent>
+
+    <artifactId>pay-trade</artifactId>
+    <name>pay-trade</name>
+    <description>Trade domain: pay orders and the state machine, refund orders, third-party async
+        callback handling and expiry-driven order closing</description>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.wendy</groupId>
+            <artifactId>pay-common</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.wendy</groupId>
+            <artifactId>pay-channel</artifactId>
+        </dependency>
+        <!-- Payment/refund results reach the upstream system through the outbox table plus MQ -->
+        <dependency>
+            <groupId>com.wendy</groupId>
+            <artifactId>pay-message</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+        </dependency>
+    </dependencies>
+</project>

@@ -1,0 +1,84 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: pay-gateway
+  datasource:
+    driver-class-name: org.h2.Driver
+    url: jdbc:h2:mem:paydb;MODE=MySQL;DB_CLOSE_DELAY=-1
+    username: sa
+    password: ''
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:db/schema.sql
+      data-locations: classpath:db/data.sql
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: GMT+8
+    default-property-inclusion: non_null
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+    # Use MyBatis' own enum handler: enums are stored as name() in VARCHAR, easy to read in the DB
+    default-enum-type-handler: org.apache.ibatis.type.EnumTypeHandler
+    # To see every SQL statement, raise the mapper log level to debug (see logging.level below)
+    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
+  global-config:
+    banner: false
+    db-config:
+      id-type: auto
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+knife4j:
+  enable: true
+  setting:
+    language: en
+
+pay:
+  # ============ Infrastructure: memory (default, zero dependencies) / redis (Redisson) ============
+  infra:
+    type: memory
+    redis:
+      address: redis://127.0.0.1:6379
+      password:
+      database: 0
+  # ============ Gateway authentication ============
+  auth:
+    enabled: false                 # once on, every /api/pay and /api/refund call needs a Bearer token
+    secret: pay-gateway-demo-secret-key-must-be-at-least-32-bytes!!
+    expire-minutes: 120
+  # ============ Pay order ============
+  order:
+    expire-minutes: 30             # unpaid orders are closed automatically after 30 minutes
+    close-task-cron: '0 */1 * * * ?'
+  # ============ Rate limiting (sliding window) ============
+  ratelimit:
+    enabled: true
+  # ============ Third-party channel simulator ============
+  mock:
+    self-base-url: http://localhost:8080
+    webhook-delay-seconds: 3      # simulated async webhook delay
+    duplicate-webhook: true       # push the webhook twice on purpose, to verify idempotency
+    fail-rate: 0                   # 0-100, simulated payment failure rate
+    notify-fail-times: 0           # fail the upstream's first N notifications, to demo MQ retry + outbox compensation
+  # ============ Reconciliation ============
+  reconcile:
+    bill-dir: ./data/bills
+    cron: '0 0 2 * * ?'            # reconcile the previous day at 02:00
+    inject-anomaly: true           # inject discrepancies into the generated bill so diffs have something to show
+
+logging:
+  level:
+    com.wendy.paygateway: info
+    # Set to debug to print every SQL statement and its parameters
+    com.wendy.paygateway.pay.mapper: info
+    org.springframework.jdbc.datasource.init: warn

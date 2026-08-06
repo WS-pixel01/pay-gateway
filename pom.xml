@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <properties>
+        <maven.compiler.source>21</maven.compiler.source>
+        <maven.compiler.target>21</maven.compiler.target>
+        <maven.compiler.release>21</maven.compiler.release>
+        <java.version>21</java.version>
+
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+
+        <lombok.version>1.18.46</lombok.version>
+        <mybatis-plus.version>3.5.5</mybatis-plus.version>
+        <knife4j.version>4.5.0</knife4j.version>
+        <jjwt.version>0.12.5</jjwt.version>
+        <redisson.version>3.27.2</redisson.version>
+    </properties>
+
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>3.2.5</version>
+        <relativePath/>
+    </parent>
+
+    <groupId>com.wendy</groupId>
+    <artifactId>pay-gateway</artifactId>
+    <version>1.0.0</version>
+    <packaging>pom</packaging>
+    <name>pay-gateway</name>
+    <description>Unified Payment Gateway - multi-module parent</description>
+
+    <!--
+      Module dependency direction (strictly one-way, no cycles):
+
+        pay-common    ← technical foundation for every module, contains no business logic
+            ↑
+        pay-account   account domain (balances, money ledger)
+            ↑
+        pay-channel   channel domain (config, routing, adapters, simulator)
+            ↑
+        pay-trade     trade domain (pay orders, refunds, callbacks)   ← pay-message messaging domain
+            ↑
+        pay-reconcile reconciliation domain
+            ↑
+        pay-bootstrap bootstrap assembly (application, config, ops endpoints, SQL scripts)
+
+      These boundaries are not decoration: they are exactly where the tier-3 "payment platform"
+      would be cut into microservices. They are modules today, and giving pay-trade / pay-channel /
+      pay-reconcile their own Spring Boot entry point is all it takes to make them standalone services.
+    -->
+    <modules>
+        <module>pay-common</module>
+        <module>pay-account</module>
+        <module>pay-channel</module>
+        <module>pay-message</module>
+        <module>pay-trade</module>
+        <module>pay-reconcile</module>
+        <module>pay-bootstrap</module>
+    </modules>
+
+    <dependencyManagement>
+        <dependencies>
+            <!-- One version for all internal modules -->
+            <dependency>
+                <groupId>com.wendy</groupId>
+                <artifactId>pay-common</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.wendy</groupId>
+                <artifactId>pay-account</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.wendy</groupId>
+                <artifactId>pay-channel</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.wendy</groupId>
+                <artifactId>pay-message</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.wendy</groupId>
+                <artifactId>pay-trade</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.wendy</groupId>
+                <artifactId>pay-reconcile</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <!-- One version for all third-party libraries -->
+            <dependency>
+                <groupId>com.baomidou</groupId>
+                <artifactId>mybatis-plus-spring-boot3-starter</artifactId>
+                <version>${mybatis-plus.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.github.xiaoymin</groupId>
+                <artifactId>knife4j-openapi3-jakarta-spring-boot-starter</artifactId>
+                <version>${knife4j.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.jsonwebtoken</groupId>
+                <artifactId>jjwt-api</artifactId>
+                <version>${jjwt.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.jsonwebtoken</groupId>
+                <artifactId>jjwt-impl</artifactId>
+                <version>${jjwt.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.jsonwebtoken</groupId>
+                <artifactId>jjwt-jackson</artifactId>
+                <version>${jjwt.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.redisson</groupId>
+                <artifactId>redisson</artifactId>
+                <version>${redisson.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.projectlombok</groupId>
+                <artifactId>lombok</artifactId>
+                <version>${lombok.version}</version>
+                <scope>provided</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <!-- Needed by every module: Lombok plus the test starter -->
+    <dependencies>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+</project>
